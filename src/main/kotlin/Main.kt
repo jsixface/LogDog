@@ -21,8 +21,10 @@
  */
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.wbtwzd.logdog.command.DeviceListCmd
 import com.wbtwzd.logdog.ui.App
 import com.wbtwzd.logdog.util.Log
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -68,6 +70,12 @@ fun main(args: Array<String>) {
     }
 
     log.i(appOptions)
+
+    runBlocking {
+        val devices = appOptions.adb?.let { DeviceListCmd(it).execute() }
+        log.i(devices ?: "No devices")
+    }
+//    startApp()
 }
 
 private fun printUsage() {
@@ -91,5 +99,5 @@ private fun startApp() = application {
 
 data class AppOptions(
     var outputDir: File? = null,
-    var adb : String? = null
+    var adb: String? = null
 )
