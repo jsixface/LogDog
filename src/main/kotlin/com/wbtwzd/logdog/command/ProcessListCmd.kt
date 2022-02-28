@@ -24,23 +24,25 @@ package com.wbtwzd.logdog.command
 
 import AppOptions
 
-class DeviceListCmd : Command<List<Device>>() {
+class ProcessListCmd(device: Device) : Command<List<Process>>() {
 
-    override val commandArgs = listOf(AppOptions.adb, "devices")
+    override val commandArgs = listOf(AppOptions.adb, "-s", device.serialName, "shell", "ps -ef| grep -e ^u0")
 
-    override suspend fun parseOutput(output: String): List<Device> {
-        log.d("Device List: $output")
-        return output.split("\n")
-            .filterNot { it.trim().isEmpty() }
-            .filterNot { it.startsWith("*") }
-            .filterNot { it.startsWith("List of devices") }
-            .mapNotNull { it.split(Regex("\\s+")).firstOrNull() }
-            .map {
-                val name = DeviceNameCmd(it).execute()
-                Device(name, it)
+    override suspend fun parseOutput(output: String): List<Process> {
+        return output.split("\n").mapNotNull {
+            val params = it.split(Regex("\\s+"))
+            try {
+                if (params.size >= 8) {
+                    Process(params[2].toInt(), params[7])
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
             }
-            .toList()
+        }
     }
+
 }
 
-data class Device(val name: String?, val serialName: String)
+data class Process(val pid: Int, val name: String)

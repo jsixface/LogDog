@@ -24,23 +24,8 @@ package com.wbtwzd.logdog.command
 
 import AppOptions
 
-class DeviceListCmd : Command<List<Device>>() {
+class DeviceNameCmd(serialName: String) : Command<String>() {
+    override val commandArgs = listOf(AppOptions.adb, "-s", serialName, "shell", "getprop ro.product.name")
 
-    override val commandArgs = listOf(AppOptions.adb, "devices")
-
-    override suspend fun parseOutput(output: String): List<Device> {
-        log.d("Device List: $output")
-        return output.split("\n")
-            .filterNot { it.trim().isEmpty() }
-            .filterNot { it.startsWith("*") }
-            .filterNot { it.startsWith("List of devices") }
-            .mapNotNull { it.split(Regex("\\s+")).firstOrNull() }
-            .map {
-                val name = DeviceNameCmd(it).execute()
-                Device(name, it)
-            }
-            .toList()
-    }
+    override suspend fun parseOutput(output: String) = output
 }
-
-data class Device(val name: String?, val serialName: String)

@@ -29,32 +29,35 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
-abstract class Command<T>(protected val adb: String) {
-    abstract suspend fun execute(): T
+abstract class Command<T> {
+
+    protected abstract val commandArgs: List<String>
 
     protected val log = Log(this.javaClass.simpleName)
 
-    protected suspend fun runCommand(vararg cmd: String) = withContext(Dispatchers.IO) {
-        val process = ProcessBuilder(*cmd).start()
+    protected abstract suspend fun parseOutput(output: String): T?
+
+    suspend fun execute(): T? = withContext(Dispatchers.IO) {
+        val process = ProcessBuilder(commandArgs).start()
         val outputStream = process.inputStream
 
         val outBytes = mutableListOf<Byte>()
-        log.i("Command: ${cmd.toList()}")
+        log.i("Command: $commandArgs")
         try {
-            while (isActive && process.isAlive) {
+            do {
+                delay(100)
                 val avail = outputStream.available()
                 if (avail > 0) {
                     outBytes.addAll(outputStream.readNBytes(avail).toTypedArray())
                 }
-                log.i("read $avail bytes")
-                delay(100)
-            }
-            outBytes.addAll(outputStream.readAllBytes().toTypedArray())
+            } while (isActive && process.isAlive)
             outputStream.close()
-            String(outBytes.toByteArray()).trim()
+            log.i("read ${outBytes.size} bytes")
+            parseOutput(String(outBytes.toByteArray()).trim())
         } catch (e: CancellationException) {
+            log.e("Cannot execute", e)
             process.destroy()
-            ""
+            null
         }
     }
 

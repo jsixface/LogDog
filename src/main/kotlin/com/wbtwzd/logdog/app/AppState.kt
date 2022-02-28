@@ -20,27 +20,13 @@
  * SOFTWARE.
  */
 
-package com.wbtwzd.logdog.command
+package com.wbtwzd.logdog.app
 
-import AppOptions
+import androidx.compose.runtime.mutableStateOf
+import com.wbtwzd.logdog.command.Device
+import com.wbtwzd.logdog.command.Process
 
-class DeviceListCmd : Command<List<Device>>() {
-
-    override val commandArgs = listOf(AppOptions.adb, "devices")
-
-    override suspend fun parseOutput(output: String): List<Device> {
-        log.d("Device List: $output")
-        return output.split("\n")
-            .filterNot { it.trim().isEmpty() }
-            .filterNot { it.startsWith("*") }
-            .filterNot { it.startsWith("List of devices") }
-            .mapNotNull { it.split(Regex("\\s+")).firstOrNull() }
-            .map {
-                val name = DeviceNameCmd(it).execute()
-                Device(name, it)
-            }
-            .toList()
-    }
+class AppState {
+    val selectedDevice = mutableStateOf<Device?>(null)
+    val selectedProcess = mutableStateOf<Process?>(null)
 }
-
-data class Device(val name: String?, val serialName: String)

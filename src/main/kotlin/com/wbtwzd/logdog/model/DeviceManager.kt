@@ -20,27 +20,18 @@
  * SOFTWARE.
  */
 
-package com.wbtwzd.logdog.command
+package com.wbtwzd.logdog.model
 
-import AppOptions
+import com.wbtwzd.logdog.command.DeviceListCmd
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlin.time.ExperimentalTime
+import kotlin.time.seconds
 
-class DeviceListCmd : Command<List<Device>>() {
+@OptIn(ExperimentalTime::class)
+object DeviceManager {
+    private val listCmd = DeviceListCmd()
 
-    override val commandArgs = listOf(AppOptions.adb, "devices")
-
-    override suspend fun parseOutput(output: String): List<Device> {
-        log.d("Device List: $output")
-        return output.split("\n")
-            .filterNot { it.trim().isEmpty() }
-            .filterNot { it.startsWith("*") }
-            .filterNot { it.startsWith("List of devices") }
-            .mapNotNull { it.split(Regex("\\s+")).firstOrNull() }
-            .map {
-                val name = DeviceNameCmd(it).execute()
-                Device(name, it)
-            }
-            .toList()
-    }
 }
-
-data class Device(val name: String?, val serialName: String)

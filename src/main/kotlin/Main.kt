@@ -19,7 +19,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import com.wbtwzd.logdog.command.DeviceListCmd
 import com.wbtwzd.logdog.ui.App
@@ -30,7 +34,6 @@ import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     val log = Log("LogDog")
-    val appOptions = AppOptions()
 
     // Parse the command line parameters
     val argList = args.asList().toMutableList()
@@ -44,7 +47,7 @@ fun main(args: Array<String>) {
                 dir?.let {
                     val outputDir = File(it)
                     if (outputDir.isDirectory) {
-                        appOptions.outputDir = outputDir
+                        AppOptions.outputDir = outputDir
                     } else {
                         log.e("Output directory does not exist")
                         printUsage()
@@ -66,16 +69,11 @@ fun main(args: Array<String>) {
         val adbFile = path.split(File.pathSeparator)
             .flatMap { File(it).listFiles()?.toList() ?: emptyList<File>() }
             .firstOrNull { it.name == "adb" }
-        adbFile?.let { appOptions.adb = it.absolutePath }
+        adbFile?.let { AppOptions.adb = it.absolutePath }
     }
 
-    log.i(appOptions)
-
-    runBlocking {
-        val devices = appOptions.adb?.let { DeviceListCmd(it).execute() }
-        log.i(devices ?: "No devices")
-    }
-//    startApp()
+    log.i(AppOptions)
+    startApp()
 }
 
 private fun printUsage() {
@@ -91,13 +89,18 @@ private fun printUsage() {
 }
 
 private fun startApp() = application {
-    Window(onCloseRequest = ::exitApplication) {
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "LogDog",
+        state = WindowState(width = 1000.dp, height = 800.dp, position = WindowPosition(Alignment.Center)
+        )
+    ) {
         App()
     }
 }
 
 
-data class AppOptions(
-    var outputDir: File? = null,
-    var adb: String? = null
-)
+object AppOptions {
+    var outputDir: File? = null
+    var adb: String = "adb"
+}
